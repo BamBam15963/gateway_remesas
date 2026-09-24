@@ -1,3 +1,12 @@
+
+import { Agent } from "undici";
+
+const insecureAgent = new Agent({
+  connect: {
+    rejectUnauthorized: false
+  }
+});
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
@@ -15,12 +24,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const destination = new URL(targetUrl);
-
     const headers = { ...req.headers };
 
-    // No reenviar estos headers porque corresponden
-    // a la conexión original con Vercel.
     delete headers.host;
     delete headers["content-length"];
 
@@ -41,16 +46,13 @@ export default async function handler(req, res) {
       }
     }
 
-    console.log("=================================");
-    console.log("PROXY REQUEST");
-    console.log("TARGET:", destination.toString());
-    console.log("METHOD:", req.method);
-    console.log("=================================");
+    console.log("TARGET:", targetUrl);
 
-    const response = await fetch(destination.toString(), {
+    const response = await fetch(targetUrl, {
       method: "POST",
       headers,
-      body
+      body,
+      dispatcher: insecureAgent
     });
 
     const responseText = await response.text();
@@ -67,11 +69,8 @@ export default async function handler(req, res) {
     return res.status(response.status).send(responseText);
 
   } catch (error) {
-    console.error("=================================");
-    console.error("PROXY ERROR");
-    console.error(error);
+    console.error("PROXY ERROR:", error);
     console.error("CAUSE:", error?.cause);
-    console.error("=================================");
 
     return res.status(502).json({
       error: "Bad Gateway",
