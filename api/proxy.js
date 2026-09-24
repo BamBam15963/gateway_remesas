@@ -1,10 +1,12 @@
-  export default async function handler(req, res) {
-  return res.status(200).json({
-    targetUrl: process.env.TARGET_URL || null,
-    vercelEnv: process.env.VERCEL_ENV || null,
-    vercelUrl: process.env.VERCEL_URL || null
-  });
-}
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      error: "Method Not Allowed",
+      message: "Only POST requests are supported"
+    });
+  }
+
 
   const targetUrl = process.env.TARGET_URL;
 
