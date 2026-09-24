@@ -1,6 +1,4 @@
-
 export default async function handler(req, res) {
-  // Solo aceptamos POST
   if (req.method !== "POST") {
     return res.status(405).json({
       error: "Method Not Allowed",
@@ -17,24 +15,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Capturar query parameters
-    const query = new URLSearchParams(req.query || {});
-
     const destination = new URL(targetUrl);
 
-    query.forEach((value, key) => {
-      destination.searchParams.set(key, value);
-    });
-
-    // Copiar headers recibidos
+    // Copiar headers
     const headers = { ...req.headers };
 
-    // Estos headers no deben reenviarse directamente
     delete headers.host;
     delete headers["content-length"];
 
-    // El body de Vercel normalmente ya viene parseado.
-    let body;
+    let body = undefined;
 
     if (req.body !== undefined && req.body !== null) {
       if (
@@ -43,38 +32,58 @@ export default async function handler(req, res) {
       ) {
         body = JSON.stringify(req.body);
 
-        headers["content-type"] =
-          headers["content-type"] || "application/json";
+        if (!headers["content-type"]) {
+          headers["content-type"] = "application/json";
+        }
       } else {
         body = req.body;
       }
     }
 
-    // Retransmitir solicitud
+    console.log("=================================");
+    console.log("PROXY REQUEST");
+    console.log("TARGET:", destination.toString());
+    console.log("METHOD:", req.method);
+    console.log("HEADERS:", headers);
+    console.log("BODY:", body);
+    console.log("=================================");
+
     const response = await fetch(destination.toString(), {
       method: "POST",
       headers,
       body
     });
 
-    // Intentar conservar el tipo de respuesta
+    const responseText = await response.text();
+
+    console.log("DESTINATION STATUS:", response.status);
+    console.log("DESTINATION RESPONSE:", responseText);
+
     const contentType = response.headers.get("content-type");
 
     if (contentType) {
       res.setHeader("content-type", contentType);
     }
 
-    const responseText = await response.text();
-
     return res.status(response.status).send(responseText);
 
   } catch (error) {
-    console.error("Proxy error:", error);
+
+    console.error("=================================");
+    console.error("PROXY ERROR");
+    console.error("NAME:", error?.name);
+    console.error("MESSAGE:", error?.message);
+    console.error("CAUSE:", error?.cause);
+    console.error("STACK:", error?.stack);
+    console.error("=================================");
 
     return res.status(502).json({
       error: "Bad Gateway",
       message: "Could not forward request",
-      details: error.message
+      details: error?.message,
+      errorName: error?.name,
+      cause: error?.cause?.message || null,
+      code: error?.cause?.code || null
     });
   }
 }
