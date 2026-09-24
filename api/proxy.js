@@ -1,4 +1,3 @@
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
@@ -6,7 +5,6 @@ export default async function handler(req, res) {
       message: "Only POST requests are supported"
     });
   }
-
 
   const targetUrl = process.env.TARGET_URL;
 
@@ -19,13 +17,14 @@ export default async function handler(req, res) {
   try {
     const destination = new URL(targetUrl);
 
-    // Copiar headers
     const headers = { ...req.headers };
 
+    // No reenviar estos headers porque corresponden
+    // a la conexión original con Vercel.
     delete headers.host;
     delete headers["content-length"];
 
-    let body = undefined;
+    let body;
 
     if (req.body !== undefined && req.body !== null) {
       if (
@@ -46,8 +45,6 @@ export default async function handler(req, res) {
     console.log("PROXY REQUEST");
     console.log("TARGET:", destination.toString());
     console.log("METHOD:", req.method);
-    console.log("HEADERS:", headers);
-    console.log("BODY:", body);
     console.log("=================================");
 
     const response = await fetch(destination.toString(), {
@@ -70,21 +67,16 @@ export default async function handler(req, res) {
     return res.status(response.status).send(responseText);
 
   } catch (error) {
-
     console.error("=================================");
     console.error("PROXY ERROR");
-    console.error("NAME:", error?.name);
-    console.error("MESSAGE:", error?.message);
+    console.error(error);
     console.error("CAUSE:", error?.cause);
-    console.error("STACK:", error?.stack);
     console.error("=================================");
 
     return res.status(502).json({
       error: "Bad Gateway",
       message: "Could not forward request",
       details: error?.message,
-      errorName: error?.name,
-      cause: error?.cause?.message || null,
       code: error?.cause?.code || null
     });
   }
