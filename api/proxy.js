@@ -1,4 +1,4 @@
-```javascript
+
 export default async function handler(req, res) {
   // Solo aceptamos POST
   if (req.method !== "POST") {
@@ -78,4 +78,3 @@ export default async function handler(req, res) {
     });
   }
 }
-```
