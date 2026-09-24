@@ -1,4 +1,3 @@
-```json
 {
   "name": "vercel-post-proxy",
   "version": "1.0.0",
@@ -11,4 +10,3 @@
     "node": "22.x"
   }
 }
-```
